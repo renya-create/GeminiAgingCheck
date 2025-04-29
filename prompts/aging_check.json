@@ -1,0 +1,29 @@
+{
+  "system_prompt": "建物の画像を簡潔に分析し、老朽化の状態を評価してください。分析結果は必ず以下のJSONスキーマに厳密に従って出力してください。余分なテキストは一切含めないでください。",
+  
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "crack_level": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 5,
+        "description": "ひび割れのレベル（0: なし、5: 重大）"
+      },
+      "danger_level": {
+        "type": "string",
+        "enum": ["低", "中", "高"],
+        "description": "全体的な危険度の評価"
+      },
+      "reasons": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 2,
+        "description": "主な問題点（最大2つ）"
+      }
+    },
+    "required": ["crack_level", "danger_level", "reasons"]
+  }
+}

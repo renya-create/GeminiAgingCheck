@@ -1,0 +1,8 @@
+google-generativeai>=0.3.0
+Pillow>=10.0.0
+python-dotenv>=1.0.0
+typing-extensions>=4.7.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+jsonschema>=4.18.0
+tenacity>=8.2.0
