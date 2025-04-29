@@ -26,14 +26,14 @@ pip install -r requirements.txt
 
 3. 環境設定
 
-`.env.example`ファイルを`.env`にコピーし、Gemini APIキーを設定します。
+`.env_template`ファイルを`.env`にコピーし、Gemini APIキーを設定します。
 
 ```bash
-cp .env.example .env
+cp .env_template .env
 # .envファイルを編集してAPIキーを設定
 ```
 
-## 詳細な使い方
+## 使い方
 
 ### 1. 環境設定
 
@@ -65,8 +65,7 @@ python main.py image/example.jpg
 ```
 
 出力：
-- `output/`ディレクトリにJSONレポートが生成
-- オプションでヒートマップ画像も生成
+- `output/`ディレクトリにJSONレポートが生成されます
 
 #### 複数画像の一括分析
 
@@ -76,44 +75,16 @@ python main.py --dir image/
 
 - 指定ディレクトリ内の全画像を分析
 - 各画像ごとに個別のレポートを生成
+- `output/analysis_summary.json`に全結果のサマリーを保存
 
 ### 3. オプション
 
-- `--output-dir`: 出力ディレクトリの指定
-- `--verbose`: 詳細なログ出力
+- `--output-dir`: 出力ディレクトリの指定（デフォルト: output）
 
 例：
 ```bash
 python main.py image/example.jpg --output-dir reports/
 ```
-
-### 4. APIモードでの使用
-
-1. APIサーバーの起動
-
-```bash
-python api.py
-```
-
-2. クライアントからの利用
-
-```python
-import requests
-
-url = "http://localhost:8000/analyze"
-files = {"file": open("image.jpg", "rb")}
-response = requests.post(url, files=files)
-print(response.json())
-```
-
-詳細なAPI仕様は`API_README.md`を参照してください。
-
-### 5. トラブルシューティング
-
-- APIキーが正しく設定されているか確認
-- 画像ファイルが適切な形式（JPEG, PNG）であることを確認
-- 十分なメモリとストレージ容量を確保
-- エラーメッセージに従って対応
 
 ## 出力例
 
@@ -144,7 +115,6 @@ GeminiAgingCheck/
 │   └── aging_check.json # JSONスキーマを含むプロンプト定義
 ├── src/
 │   ├── analyze.py      # メイン処理・AI連携
-│   ├── preprocess.py   # 画像前処理
 │   └── schemas.py      # 出力JSONの型定義
 ├── main.py             # 実行スクリプト
 └── requirements.txt    # 依存パッケージ
@@ -154,11 +124,10 @@ GeminiAgingCheck/
 
 - Python 3.9+
 - Google Generative AI (Gemini)
-- OpenCV（画像処理）
-- Pillow（画像前処理）
-- JSONSchema（データ検証）
+- Pillow（画像処理）
 
 ## 注意事項
 
 - Gemini APIキーが必要です
 - 分析結果は参考情報であり、専門家の判断を代替するものではありません
+- 対応画像形式: JPEG, PNG

@@ -5,13 +5,44 @@ from typing import Optional, Dict
 from PIL import Image
 import google.generativeai as genai
 from src.schemas import AgingReport
-
-# 環境変数から設定を読み込む
 from dotenv import load_dotenv
-load_dotenv()
+
+def load_env() -> str:
+    """
+    環境変数の読み込みと検証
+    
+    Returns:
+        str: GEMINI_API_KEYの値
+        
+    Raises:
+        FileNotFoundError: .envファイルが見つからない場合
+        ValueError: GEMINI_API_KEYが設定されていない場合
+    """
+    # プロジェクトのルートディレクトリを取得
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env_path = os.path.join(project_root, '.env')
+    
+    # .envファイルの存在確認
+    if not os.path.exists(env_path):
+        raise FileNotFoundError(f".envファイルが見つかりません: {env_path}")
+    
+    # 現在の環境変数をクリア
+    if 'GEMINI_API_KEY' in os.environ:
+        del os.environ['GEMINI_API_KEY']
+    
+    # 環境変数の読み込み（override=Trueを指定）
+    load_dotenv(env_path, override=True)
+    
+    # APIキーの取得と検証
+    api_key = os.getenv("GEMINI_API_KEY")
+    
+    if not api_key:
+        raise ValueError("GEMINI_API_KEYが.envファイルに設定されていません")
+    
+    return api_key
 
 # Gemini API設定
-API_KEY = os.getenv("GEMINI_API_KEY", "")
+API_KEY = load_env()
 
 def init_api():
     """Google Generative AI APIの初期化"""
@@ -43,8 +74,23 @@ def generate_structured_report(img_path: str) -> AgingReport:
         
         # JSONとしてパース
         result = json.loads(response.text)
+        
+        # 必要なキーが存在するか確認
+        required_keys = ['crack_level', 'danger_level', 'reasons']
+        for key in required_keys:
+            if key not in result:
+                raise ValueError(f"レスポンスに必要なキー '{key}' が含まれていません")
+        
         return AgingReport(**result)
         
+    except json.JSONDecodeError as e:
+        print(f"JSONパースエラー: {str(e)}")
+        print(f"レスポンス: {response.text}")
+        return AgingReport(
+            crack_level=0,
+            danger_level="低",
+            reasons=[f"JSONパースエラー: {str(e)}"]
+        )
     except Exception as e:
         print(f"エラーが発生しました: {str(e)}")
         return AgingReport(
@@ -69,12 +115,19 @@ def analyze_image(image_path: str) -> Optional[Dict]:
         base_name = os.path.basename(image_path)
         json_path = os.path.join(output_dir, f"{os.path.splitext(base_name)[0]}.json")
         
+        # AgingReportを辞書に変換
+        report_dict = {
+            "crack_level": report["crack_level"],
+            "danger_level": report["danger_level"],
+            "reasons": report["reasons"]
+        }
+        
         with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(report.dict(), f, ensure_ascii=False, indent=2)
+            json.dump(report_dict, f, ensure_ascii=False, indent=2)
 
         return {
             "image": image_path,
-            "report": report.dict()
+            "report": report_dict
         }
     except Exception as e:
         print(f"エラー: {str(e)}")

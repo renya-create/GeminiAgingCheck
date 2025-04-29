@@ -1,0 +1,12 @@
+[
+  {
+    "image": "akiya.jpg",
+    "report": {
+      "crack_level": 0,
+      "danger_level": "低",
+      "reasons": [
+        "JSONパースエラー: Expecting value: line 1 column 1 (char 0)"
+      ]
+    }
+  }
+]
