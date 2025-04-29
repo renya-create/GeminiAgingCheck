@@ -131,3 +131,61 @@ GeminiAgingCheck/
 - Gemini APIキーが必要です
 - 分析結果は参考情報であり、専門家の判断を代替するものではありません
 - 対応画像形式: JPEG, PNG
+
+## APIの使用方法
+
+このプロジェクトはREST APIとしても利用可能です。APIサーバーを起動後、他のプログラムから分析リクエストを送信できます。
+
+### 1. APIサーバーの起動
+
+```bash
+python main.py --api
+```
+
+デフォルトで`http://localhost:8000`でAPIサーバーが起動します。
+
+### 2. APIエンドポイント
+
+#### 画像分析エンドポイント
+- URL: `/analyze`
+- メソッド: POST
+- Content-Type: multipart/form-data
+- パラメータ:
+  - `file`: 分析対象の画像ファイル
+
+#### レスポンス例
+```json
+{
+  "crack_level": 3,
+  "discoloration_percent": 45.2,
+  "danger_level": "中",
+  "reasons": [
+    "壁面に網目状のひび割れが確認",
+    "排水口周辺に藻の繁殖"
+  ],
+  "maintenance_advice": [
+    "防水コーティングの塗り直し",
+    "排水路の清掃を実施"
+  ]
+}
+```
+
+### 3. クライアント例
+
+PythonでのAPI呼び出し例：
+
+```python
+import requests
+
+def analyze_image(image_path, api_url="http://localhost:8000/analyze"):
+    with open(image_path, 'rb') as f:
+        files = {'file': f}
+        response = requests.post(api_url, files=files)
+        return response.json()
+
+# 使用例
+result = analyze_image('path/to/image.jpg')
+print(result)
+```
+
+詳細なクライアント実装例は`client_example.py`を参照してください。
