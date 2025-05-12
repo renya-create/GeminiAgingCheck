@@ -67,8 +67,8 @@ def save_report(report, output_path):
 def main():
     """メイン実行関数"""
     if len(sys.argv) < 2:
-        print("使用法: python client_example.py <画像パス>")
-        print("例: python client_example.py ./image/sample.png")
+        print("使用法: python client_example.py <画像パス> [API URL]")
+        print("例: python client_example.py ./image/sample.png http://localhost:8000/analyze")
         return
     
     # 引数の取得

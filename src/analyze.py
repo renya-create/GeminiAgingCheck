@@ -60,20 +60,31 @@ def generate_structured_report(img_path: str) -> AgingReport:
     
     # プロンプトの読み込み
     prompt_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 
-                              'prompts', 'aging_check.json')
+                              'resources', 'prompts', 'aging_check.json')
     with open(prompt_path, 'r', encoding='utf-8') as f:
         prompt_data = json.load(f)
     
-    # APIリクエスト
     try:
+        # APIリクエスト
         response = model.generate_content([
             prompt_data['system_prompt'],
             img,
             f"出力スキーマ: {json.dumps(prompt_data['output_schema'], ensure_ascii=False)}"
         ])
         
+        # マークダウン形式のJSONを処理
+        json_text = response.text
+        if '```json' in json_text:
+            # マークダウンブロックを抽出
+            parts = json_text.split('```json')
+            if len(parts) > 1:
+                json_text = parts[1]
+                if '```' in json_text:
+                    json_text = json_text.split('```')[0]
+        json_text = json_text.strip()
+        
         # JSONとしてパース
-        result = json.loads(response.text)
+        result = json.loads(json_text)
         
         # 必要なキーが存在するか確認
         required_keys = ['crack_level', 'danger_level', 'reasons']
@@ -86,18 +97,17 @@ def generate_structured_report(img_path: str) -> AgingReport:
     except json.JSONDecodeError as e:
         print(f"JSONパースエラー: {str(e)}")
         print(f"レスポンス: {response.text}")
-        return AgingReport(
-            crack_level=0,
-            danger_level="低",
-            reasons=[f"JSONパースエラー: {str(e)}"]
-        )
+        return {
+            "error": True,
+            "message": f"JSONパースエラー: {str(e)}",
+            "response": response.text
+        }
     except Exception as e:
         print(f"エラーが発生しました: {str(e)}")
-        return AgingReport(
-            crack_level=0,
-            danger_level="低",
-            reasons=[f"エラー: {str(e)}"]
-        )
+        return {
+            "error": True,
+            "message": f"エラー: {str(e)}"
+        }
 
 def analyze_image(image_path: str) -> Optional[Dict]:
     """画像分析のメイン処理"""
@@ -108,6 +118,11 @@ def analyze_image(image_path: str) -> Optional[Dict]:
         # レポート生成
         print(f"画像を分析中: {image_path}")
         report = generate_structured_report(image_path)
+        
+        # エラーチェック
+        if isinstance(report, dict) and report.get("error"):
+            print(f"分析エラー: {report['message']}")
+            return None
         
         # 結果をJSONファイルとして保存
         output_dir = "output"
