@@ -1,192 +1,127 @@
-# GeminiAgingCheck
+# AkiyaAgingCheck
 
-- Gemini APIを活用した老朽化インフラ分析CLIツール
-- 空き家の写真を分析してJSONフォーマットで空き家の老朽化レベルを分析するレポートを生成
+空き家の老朽化状態を画像から分析するツール
 
 ## 機能
 
-- 建物・インフラの老朽化状態を画像から分析
-- ひび割れレベル、変色割合、危険度の評価
-- 構造化されたJSONレポート生成
-- 複数画像の一括処理
+- 画像から建物の老朽化状態を分析
+- ひび割れレベル、危険度、理由を自動判定
+- APIサーバーとして利用可能
+- CLIツールとして利用可能
 
-## インストール方法
+## ディレクトリ構造
+
+```
+AkiyaAgingCheck/
+├── api/                # APIサーバー関連
+│   ├── api.py         # FastAPIサーバー
+│   └── main.py        # APIサーバー起動スクリプト
+├── cli/               # CLIツール関連
+│   └── main.py        # CLIツール
+├── resources/         # リソースファイル
+│   ├── image/         # サンプル画像
+│   └── prompts/       # プロンプト定義
+├── src/              # コアロジック
+│   ├── analyze.py     # 画像分析ロジック
+│   └── schemas.py     # データモデル定義
+├── output/           # 分析結果出力先
+├── .env              # 環境変数設定
+├── requirements.txt  # 依存パッケージ
+└── README.md         # 本ファイル
+```
+
+## セットアップ
 
 1. リポジトリをクローン
-
 ```bash
-git clone https://github.com/yourusername/GeminiAgingCheck.git
-cd GeminiAgingCheck
+git clone https://github.com/yourusername/AkiyaAgingCheck.git
+cd AkiyaAgingCheck
 ```
 
 2. 依存パッケージのインストール
-
 ```bash
 pip install -r requirements.txt
 ```
 
-3. 環境設定
-
-`.env_template`ファイルを`.env`にコピーし、Gemini APIキーを設定します。
-
-```bash
-cp .env_template .env
-# .envファイルを編集してAPIキーを設定
+3. 環境変数の設定
+`.env`ファイルを作成し、以下の内容を設定：
+```
+GEMINI_API_KEY=your_api_key_here
 ```
 
-## 使い方
+## 使用方法
 
-### 1. 環境設定
+### CLIツール
 
-1. Gemini APIキーの取得
-   - [Google AI Studio](https://makersuite.google.com/app/apikey)でAPIキーを取得
-   - `.env_template`を`.env`にコピーし、取得したAPIキーを設定
-
+1. 単一画像の分析
 ```bash
-cp .env_template .env
-# .envファイルを編集してGEMINI_API_KEYを設定
+python -m cli.main path/to/image.jpg
 ```
 
-2. 仮想環境のセットアップ（推奨）
-
+2. ディレクトリ内の全画像を分析
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# または
-.venv\Scripts\activate  # Windows
-pip install -r requirements.txt
+python -m cli.main --dir path/to/images
 ```
 
-### 2. 基本的な使用方法
-
-#### 単一画像の分析
-
+3. 出力ディレクトリを指定
 ```bash
-python main.py image/example.jpg
+python -m cli.main path/to/image.jpg --output-dir custom/output/dir
 ```
 
-出力：
-- `output/`ディレクトリにJSONレポートが生成されます
+分析結果は`output`ディレクトリに保存されます：
+- `analysis_summary.json`: 成功した分析結果
+- `analysis_errors.json`: エラー情報
+- 個別の画像分析結果: `{画像名}.json`
 
-#### 複数画像の一括分析
+### APIサーバー
 
+1. サーバーの起動
 ```bash
-python main.py --dir image/
+python -m api.main
 ```
 
-- 指定ディレクトリ内の全画像を分析
-- 各画像ごとに個別のレポートを生成
-- `output/analysis_summary.json`に全結果のサマリーを保存
-
-### 3. オプション
-
-- `--output-dir`: 出力ディレクトリの指定（デフォルト: output）
-
-例：
+2. APIの利用
 ```bash
-python main.py image/example.jpg --output-dir reports/
+curl -X POST "http://localhost:8000/analyze" \
+     -H "accept: application/json" \
+     -H "Content-Type: multipart/form-data" \
+     -F "file=@path/to/image.jpg"
 ```
 
-## 出力例
-
+レスポンス例：
 ```json
 {
   "crack_level": 3,
-  "discoloration_percent": 45.2,
   "danger_level": "中",
-  "reasons": [
-    "壁面に網目状のひび割れが確認",
-    "排水口周辺に藻の繁殖"
-  ],
-  "maintenance_advice": [
-    "防水コーティングの塗り直し",
-    "排水路の清掃を実施"
+  "reasons": ["壁のひび割れ", "屋根の損傷"]
+}
+```
+
+## 出力形式
+
+### 成功時
+```json
+{
+  "crack_level": 0-5,  // ひび割れレベル（0: なし、5: 深刻）
+  "danger_level": "低/中/高",  // 危険度
+  "reasons": [  // 判定理由
+    "理由1",
+    "理由2"
   ]
 }
 ```
 
-## プロジェクト構成
-
+### エラー時
+```json
+{
+  "error": true,
+  "message": "エラーメッセージ",
+  "response": "APIレスポンス"  // オプション
+}
 ```
-GeminiAgingCheck/
-├── .env                # 環境変数
-├── image/              # 分析対象の画像を格納
-├── output/             # 生成されたレポートの出力先
-├── prompts/            # AIへの指示プロンプト
-│   └── aging_check.json # JSONスキーマを含むプロンプト定義
-├── src/
-│   ├── analyze.py      # メイン処理・AI連携
-│   └── schemas.py      # 出力JSONの型定義
-├── main.py             # 実行スクリプト
-└── requirements.txt    # 依存パッケージ
-```
-
-## 技術スタック
-
-- Python 3.9+
-- Google Generative AI (Gemini)
-- Pillow（画像処理）
 
 ## 注意事項
 
-- Gemini APIキーが必要です
-- 分析結果は参考情報であり、専門家の判断を代替するものではありません
-- 対応画像形式: JPEG, PNG
-
-## APIの使用方法
-
-このプロジェクトはREST APIとしても利用可能です。APIサーバーを起動後、他のプログラムから分析リクエストを送信できます。
-
-### 1. APIサーバーの起動
-
-```bash
-python main.py --api
-```
-
-デフォルトで`http://localhost:8000`でAPIサーバーが起動します。
-
-### 2. APIエンドポイント
-
-#### 画像分析エンドポイント
-- URL: `/analyze`
-- メソッド: POST
-- Content-Type: multipart/form-data
-- パラメータ:
-  - `file`: 分析対象の画像ファイル
-
-#### レスポンス例
-```json
-{
-  "crack_level": 3,
-  "discoloration_percent": 45.2,
-  "danger_level": "中",
-  "reasons": [
-    "壁面に網目状のひび割れが確認",
-    "排水口周辺に藻の繁殖"
-  ],
-  "maintenance_advice": [
-    "防水コーティングの塗り直し",
-    "排水路の清掃を実施"
-  ]
-}
-```
-
-### 3. クライアント例
-
-PythonでのAPI呼び出し例：
-
-```python
-import requests
-
-def analyze_image(image_path, api_url="http://localhost:8000/analyze"):
-    with open(image_path, 'rb') as f:
-        files = {'file': f}
-        response = requests.post(api_url, files=files)
-        return response.json()
-
-# 使用例
-result = analyze_image('path/to/image.jpg')
-print(result)
-```
-
-詳細なクライアント実装例は`client_example.py`を参照してください。
+- 画像は`.jpg`、`.jpeg`、`.png`形式に対応
+- APIキーは必ず`.env`ファイルで設定してください
+- 分析結果は`output`ディレクトリに自動保存されます
