@@ -25,6 +25,7 @@ venv/
 env/
 ENV/
 .env
+.venv/
 
 # IDE
 .idea/
@@ -43,4 +44,11 @@ Thumbs.db
 *.sqlite3
 *.db
 
-.venv/
+# output
+output/
+
+# temp
+temp/
+
+# image
+image/
